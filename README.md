@@ -39,7 +39,7 @@ The project focuses on observability, reliability, background processing, and te
 
 ---
 
-## 🏗️ Architecture Overview
+## Architecture Overview
 
   apps/api
   
