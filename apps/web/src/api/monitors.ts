@@ -24,3 +24,28 @@ export type Monitor = {
 export function listMonitors() {
   return api<{ items: Monitor[] }>("/monitors");
 }
+
+export type CreateMonitorInput = {
+  name: string;
+  url: string;
+  method?: "GET" | "POST" | "PUT" | "HEAD";
+  interval?: number;
+  timeout?: number;
+  expectedStatus?: number;
+  enabled?: boolean;
+};
+
+export function createMonitor(input: CreateMonitorInput) {
+  return api<{ monitor: Monitor }>("/monitors", {
+    method: "POST",
+    body: JSON.stringify({
+      name: input.name,
+      url: input.url,
+      method: input.method ?? "GET",
+      interval: input.interval ?? 60,
+      timeout: input.timeout ?? 5000,
+      expectedStatus: input.expectedStatus ?? 200,
+      enabled: input.enabled ?? true
+    })
+  });
+}

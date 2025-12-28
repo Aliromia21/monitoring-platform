@@ -1,18 +1,51 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { listMonitors } from "../api/monitors";
+import { useState } from "react";
+
+import { listMonitors, createMonitor } from "../api/monitors";
 import { StatusBadge } from "../ui/components/StatusBadge";
 import { Metric } from "../ui/components/Metric";
+import { Modal } from "../ui/components/Modal";
 import { formatDateTime, formatMs } from "../lib/format";
 
 export function MonitorsPage() {
+  const qc = useQueryClient();
+
+  /* =========================
+     Queries
+  ========================= */
   const q = useQuery({
     queryKey: ["monitors"],
     queryFn: listMonitors
   });
 
+  /* =========================
+     Create Monitor Modal state
+  ========================= */
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [url, setUrl] = useState("");
+  const [interval, setInterval] = useState(60);
+
+  const createM = useMutation({
+    mutationFn: () =>
+      createMonitor({
+        name: name.trim(),
+        url: url.trim(),
+        interval
+      }),
+    onSuccess: async () => {
+      setOpen(false);
+      setName("");
+      setUrl("");
+      setInterval(60);
+      await qc.invalidateQueries({ queryKey: ["monitors"] });
+    }
+  });
+
   return (
     <div className="space-y-4">
+      {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold">Monitors</h1>
@@ -21,11 +54,15 @@ export function MonitorsPage() {
           </p>
         </div>
 
-        <button className="rounded-lg px-3 py-2 text-white bg-indigo-600 hover:bg-indigo-500">
+        <button
+          onClick={() => setOpen(true)}
+          className="rounded-lg px-3 py-2 text-white bg-indigo-600 hover:bg-indigo-500"
+        >
           Create monitor
         </button>
       </div>
 
+      {/* Content */}
       {q.isLoading ? (
         <div className="text-slate-600">Loading monitors...</div>
       ) : q.isError ? (
@@ -70,8 +107,14 @@ export function MonitorsPage() {
               </div>
 
               <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
-                <Metric label="Last response time" value={formatMs(m.lastResponseTime ?? null)} />
-                <Metric label="Last checked" value={formatDateTime(m.lastCheckedAt ?? null)} />
+                <Metric
+                  label="Last response time"
+                  value={formatMs(m.lastResponseTime ?? null)}
+                />
+                <Metric
+                  label="Last checked"
+                  value={formatDateTime(m.lastCheckedAt ?? null)}
+                />
                 <Metric
                   label="Expected status"
                   value={<span className="font-medium">{m.expectedStatus}</span>}
@@ -81,6 +124,86 @@ export function MonitorsPage() {
           ))}
         </div>
       )}
+
+      {/* =========================
+          Create Monitor Modal
+         ========================= */}
+      <Modal
+        open={open}
+        title="Create monitor"
+        onClose={() => !createM.isPending && setOpen(false)}
+      >
+        {createM.isError ? (
+          <div className="mb-3 text-sm text-rose-600">
+            {(createM.error as any)?.message ?? "Failed to create monitor"}
+          </div>
+        ) : null}
+
+        <form
+          className="space-y-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            createM.mutate();
+          }}
+        >
+          <div>
+            <label className="text-sm text-slate-600">Name</label>
+            <input
+              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-200"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Google Health"
+              required
+              maxLength={120}
+            />
+          </div>
+
+          <div>
+            <label className="text-sm text-slate-600">URL</label>
+            <input
+              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-200"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://example.com/health"
+              required
+            />
+            <div className="text-xs text-slate-500 mt-1">
+              Must be a valid HTTP/HTTPS URL.
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm text-slate-600">Interval (seconds)</label>
+            <input
+              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-200"
+              value={interval}
+              onChange={(e) => setInterval(Number(e.target.value))}
+              type="number"
+              min={10}
+              max={3600}
+              required
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              disabled={createM.isPending}
+              className="rounded-lg px-3 py-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 disabled:opacity-60"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={createM.isPending}
+              className="rounded-lg px-3 py-2 text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60"
+            >
+              {createM.isPending ? "Creating..." : "Create"}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }
