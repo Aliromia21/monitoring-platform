@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: 248 250 252;        /* slate-50 */
+  --card: 255 255 255;      /* white */
+  --border: 226 232 240;    /* slate-200 */
+  --text: 15 23 42;         /* slate-900 */
+  --muted: 100 116 139;     /* slate-500 */
+
+  --primary: 79 70 229;     /* indigo-600 */
+  --primary-2: 99 102 241;  /* indigo-500 */
+
+  --success: 16 185 129;    /* emerald-500 */
+  --danger: 244 63 94;      /* rose-500 */
+  --warning: 245 158 11;    /* amber-500 */
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background: rgb(var(--bg));
+  color: rgb(var(--text));
+}
