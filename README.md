@@ -186,6 +186,18 @@ In-memory MongoDB for deterministic tests
 
 Frontend tested via component & query-level testing
 
+## License :
+
+MIT License © Ali Romia
+
+## Author :
+
+Ali Romia - Software Engineer
+
+GitHub: https://github.com/Aliromia21
+
+LinkedIn: https://www.linkedin.com/in/aliromia/
+
 
 
 
