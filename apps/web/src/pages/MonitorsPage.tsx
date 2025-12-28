@@ -2,10 +2,16 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 
-import { listMonitors, createMonitor } from "../api/monitors";
+import {
+  listMonitors,
+  createMonitor,
+  updateMonitor,
+  deleteMonitor
+} from "../api/monitors";
 import { StatusBadge } from "../ui/components/StatusBadge";
 import { Metric } from "../ui/components/Metric";
 import { Modal } from "../ui/components/Modal";
+import { ConfirmDialog } from "../ui/components/ConfirmDialog";
 import { formatDateTime, formatMs } from "../lib/format";
 
 export function MonitorsPage() {
@@ -43,6 +49,27 @@ export function MonitorsPage() {
     }
   });
 
+  /* =========================
+     Toggle + Delete actions
+  ========================= */
+  const toggleM = useMutation({
+    mutationFn: (p: { id: string; enabled: boolean }) =>
+      updateMonitor(p.id, { enabled: p.enabled }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["monitors"] });
+    }
+  });
+
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const deleteM = useMutation({
+    mutationFn: (id: string) => deleteMonitor(id),
+    onSuccess: async () => {
+      setDeleteId(null);
+      await qc.invalidateQueries({ queryKey: ["monitors"] });
+    }
+  });
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -73,7 +100,8 @@ export function MonitorsPage() {
         <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-soft">
           <div className="font-medium mb-1">No monitors yet</div>
           <div className="text-sm text-slate-600">
-            Create your first monitor to start collecting uptime and latency data.
+            Create your first monitor to start collecting uptime and latency
+            data.
           </div>
         </div>
       ) : (
@@ -95,14 +123,45 @@ export function MonitorsPage() {
                       </span>
                     ) : null}
                   </div>
+
                   <div className="mt-1 text-sm text-slate-600 truncate">
                     {m.method} · {m.url}
                   </div>
                 </div>
 
-                <div className="text-right text-xs text-slate-500">
-                  <div>Interval</div>
-                  <div className="text-slate-900 font-medium">{m.interval}s</div>
+                <div className="flex items-start gap-2">
+                  <div className="text-right text-xs text-slate-500">
+                    <div>Interval</div>
+                    <div className="text-slate-900 font-medium">
+                      {m.interval}s
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleM.mutate({ id: m.id, enabled: !m.enabled });
+                      }}
+                      className="text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
+                      title={m.enabled ? "Disable monitor" : "Enable monitor"}
+                    >
+                      {m.enabled ? "Disable" : "Enable"}
+                    </button>
+
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setDeleteId(m.id);
+                      }}
+                      className="text-xs px-2.5 py-1.5 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700"
+                      title="Delete monitor"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -204,6 +263,23 @@ export function MonitorsPage() {
           </div>
         </form>
       </Modal>
+
+      {/* =========================
+          Delete Confirm Dialog
+         ========================= */}
+      <ConfirmDialog
+        open={!!deleteId}
+        title="Delete monitor?"
+        description="This will remove the monitor and its configuration. Check history may remain in the database depending on retention policy."
+        confirmText="Delete"
+        danger
+        busy={deleteM.isPending}
+        onCancel={() => !deleteM.isPending && setDeleteId(null)}
+        onConfirm={() => {
+          if (!deleteId) return;
+          deleteM.mutate(deleteId);
+        }}
+      />
     </div>
   );
 }

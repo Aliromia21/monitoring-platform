@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+
 import { listAlerts } from "../api/alerts";
+import type { Monitor } from "../api/monitors";
+
 import { Card, CardBody, CardHeader } from "../ui/components/Card";
 import { Segmented } from "../ui/components/Segmented";
 import { StatusBadge } from "../ui/components/StatusBadge";
@@ -14,12 +17,33 @@ export function AlertsPage() {
 
   const typeParam = filter === "ALL" ? undefined : filter;
 
+  /* =========================
+     Alerts query
+  ========================= */
   const q = useQuery({
     queryKey: ["alerts", { filter, page }],
     queryFn: () => listAlerts({ type: typeParam as any, page, limit: 20 }),
-    refetchInterval: 15000 
+    refetchInterval: 15000,
+    refetchIntervalInBackground: true
   });
 
+  /* =========================
+     Monitor name lookup
+  ========================= */
+  const qc = useQueryClient();
+  const monitorsData = qc.getQueryData<{ items: Monitor[] }>(["monitors"]);
+
+  const monitorNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const m of monitorsData?.items ?? []) {
+      map.set(m.id, m.name);
+    }
+    return map;
+  }, [monitorsData]);
+
+  /* =========================
+     Client-side filter fallback
+  ========================= */
   const items = useMemo(() => {
     const data = q.data?.items ?? [];
     if (filter === "ALL") return data;
@@ -30,6 +54,7 @@ export function AlertsPage() {
 
   return (
     <div className="space-y-4">
+      {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold">Alerts</h1>
@@ -61,21 +86,22 @@ export function AlertsPage() {
         </div>
       </div>
 
+      {/* Alerts list */}
       <Card>
         <CardHeader
-        title="Recent alerts"
-        subtitle={q.isFetching ? "Updating..." : "Latest events"}
-        right={
+          title="Recent alerts"
+          subtitle={q.isFetching ? "Updating..." : "Latest events"}
+          right={
             <div className="flex items-center gap-2 text-sm text-slate-600">
-            <span
+              <span
                 className={[
-                "h-2 w-2 rounded-full",
-                q.isFetching ? "bg-indigo-500 animate-pulse" : "bg-slate-300"
+                  "h-2 w-2 rounded-full",
+                  q.isFetching ? "bg-indigo-500 animate-pulse" : "bg-slate-300"
                 ].join(" ")}
-            />
-            <span>{q.isFetching ? "Live" : "Idle"}</span>
+              />
+              <span>{q.isFetching ? "Live" : "Idle"}</span>
             </div>
-        }
+          }
         />
 
         <CardBody>
@@ -96,11 +122,17 @@ export function AlertsPage() {
                 >
                   <div className="min-w-0">
                     <div className="flex items-center gap-3">
-                      <StatusBadge status={a.type === "DOWN" ? "DOWN" : "UP"} />
+                      <StatusBadge
+                        status={a.type === "DOWN" ? "DOWN" : "UP"}
+                      />
                       <div className="font-medium truncate">{a.message}</div>
                     </div>
+
                     <div className="text-sm text-slate-600 mt-1">
-                      Monitor: <span className="font-mono text-xs">{a.monitorId}</span>
+                      Monitor:{" "}
+                      <span className="text-slate-900 font-medium">
+                        {monitorNameById.get(a.monitorId) ?? a.monitorId}
+                      </span>
                     </div>
                   </div>
 
@@ -126,6 +158,7 @@ export function AlertsPage() {
               >
                 Prev
               </button>
+
               <button
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => p + 1)}

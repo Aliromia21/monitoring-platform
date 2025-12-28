@@ -49,3 +49,25 @@ export function createMonitor(input: CreateMonitorInput) {
     })
   });
 }
+
+export type UpdateMonitorInput = Partial<{
+  name: string;
+  url: string;
+  method: "GET" | "POST" | "PUT" | "HEAD";
+  interval: number;
+  timeout: number;
+  expectedStatus: number;
+  enabled: boolean;
+}>;
+
+export function updateMonitor(id: string, input: UpdateMonitorInput) {
+  return api<{ monitor: Monitor }>(`/monitors/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(input)
+  });
+}
+
+export function deleteMonitor(id: string) {
+  return api<{ ok: true }>(`/monitors/${id}`, { method: "DELETE" });
+}
+
