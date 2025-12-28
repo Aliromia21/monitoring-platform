@@ -1,173 +1,195 @@
 # Monitoring Platform (SaaS)
 
-Production-style monitoring platform for HTTP services, inspired by systems like Datadog and UptimeRobot.
+Production-style monitoring platform for HTTP services, inspired by systems like **Datadog**, **New Relic**, and **UptimeRobot**.
 
-The project focuses on observability, reliability, background processing, and testability, and is designed to demonstrate real-world backend and platform engineering skills.
+This project demonstrates how to design and implement a **real-world monitoring system** with background workers, alerting semantics, historical metrics, and a modern dashboard — focusing on **observability, reliability, and testability**.
 
 ---
 
-##  Features
+## Features
 
 ### Core
-- User authentication (JWT)
-- Monitor CRUD (HTTP endpoints)
-- Ownership & authorization enforcement
+- JWT-based authentication
+- Monitor CRUD with strict ownership enforcement
+- Secure, multi-user architecture
 
 ### Monitoring Engine
-- Background scheduler
-- Periodic HTTP checks
+- Background scheduler (async, non-blocking)
+- Periodic HTTP health checks
 - Response time & availability tracking
-- Time-series metrics storage
+- Time-series check run storage
 
 ### Alerting
 - DOWN alerts after consecutive failures
-- RECOVERY alerts on service restoration
-- Guaranteed:
+- RECOVERY alerts only after confirmed DOWN
+- Guaranteed semantics:
   - No duplicate DOWN alerts
-  - RECOVERY only after confirmed DOWN
+  - RECOVERY only after an actual outage
 
 ### APIs
 - Monitors list & details
-- Check history (`/monitors/:id/checks`)
-- Alerts (`/alerts`)
-- Monitor summary (`/monitors/:id/summary`)
+- Check history  
+  `GET /monitors/:id/checks`
+- Alerts  
+  `GET /alerts`
+- Summary statistics  
+  `GET /monitors/:id/summary?windowHours=24`
 
-### Testing
-- Unit tests for alerting rules
-- Integration tests for APIs
-- In-memory database for deterministic tests
+### Dashboard (Frontend)
+- Authentication flow (login / register)
+- Protected routes
+- Monitors overview
+- Monitor details:
+  - Uptime summary
+  - Latency & availability charts
+  - Check history table
+- Alerts page with polling and filtering
 
 ---
 
 ## Architecture Overview
 
-  apps/api
-  
-  ├── src
-  
-  │ ├── modules
-  
-  │ │ ├── auth
-  
-  │ │ ├── monitors
-  
-  │ │ ├── checkruns
-  
-  │ │ └── alerts
-  
-  │ ├── engine
-  
-  │ │ ├── monitoringEngine.ts
-  
-  │ │ ├── httpCheck.ts
-  
-  │ │ └── alertRules.ts
-  
-  │ ├── middleware
-  
-  │ └── config
-  
+apps/
+
+├── api
+
+│ ├── modules
+
+│ │ ├── auth
+
+│ │ ├── monitors
+
+│ │ ├── checkruns
+
+│ │ └── alerts
+
+│ ├── engine
+
+│ │ ├── monitoringEngine.ts
+
+│ │ ├── httpCheck.ts
+
+│ │ └── alertRules.ts
+
+│ ├── middleware
+
+│ └── config
+
+│
+└── web
+
+├── pages
+
+├── ui
+
+└── api
 
 
-- **API Server**: Node.js + Express
-- **Database**: MongoDB (time-series style collections)
-- **Background Workers**: In-process scheduler with concurrency control
-
----
+-----
 
 ## Tech Stack
 
 **Backend**
 - Node.js + TypeScript
 - Express
-- MongoDB + Mongoose
-- JWT Authentication
+- MongoDB (time-series style collections)
+- Background monitoring engine (in-process workers)
 
-**Testing**
-- Jest
-- Supertest
+**Frontend**
+- React + Vite
+- Tailwind CSS
+- React Query
+- Recharts
 
 **Infrastructure**
-- Docker (MongoDB)
-- GitHub (CI-ready)
+- Docker & Docker Compose
+- MongoDB container
+- CI-ready setup
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
-### 1️⃣ Prerequisites
+### Prerequisites
 - Node.js ≥ 18
-- Docker
+- Docker Desktop (or Docker Engine)
 
 ---
 
-### 2️⃣ Start MongoDB
+### 1️⃣ Run Backend (API + MongoDB)
+
+From the repository root:
+
 ```bash
-docker run -d --name monitoring-mongo -p 27017:27017 mongo:6
+docker compose up --build
+```
+Backend API:
+```
+http://localhost:4000
+```
+Health check:
+```
+GET http://localhost:4000/health
 ```
 
-### 3️⃣ Setup environment
-Create .env inside apps/api:
-```bash
-NODE_ENV=development
-PORT=4000
-MONGODB_URI=mongodb://127.0.0.1:27017/monitoring_platform_dev
-JWT_SECRET=change_me
-JWT_EXPIRES_IN=7d
-CORS_ORIGIN=*
-
+### 2️⃣ Run Frontend (Dashboard)
+In a new terminal:
 ```
-
-### 4️⃣ Install dependencies & run:
-```bash
-cd apps/api
+cd apps/web
 npm install
 npm run dev
 ```
-API will be available at:
-```bash
-http://localhost:4000
+Frontend 
 ```
-### 5️⃣ Run tests
-```bash
-npm test
+http://localhost:5173
 ```
 
-## Example APIs :
-Create Monitor : 
-POST /monitors
-```bash
-Authorization: Bearer <token>
-```
-Monitor Checks History
-```bash
-GET /monitors/:id/checks
-```
-Alerts
-GET /alerts
+---
 
-Monitor Summary
-```bash
-GET /monitors/:id/summary?windowHours=24
-```
+## Example Test Monitors
+
+Useful endpoints to demonstrate alerting and recovery:
+
+table uptime	https://www.google.com
+
+Real API	https://api.github.com
+
+Status failure	https://httpstat.us/500
+
+Timeout	https://httpstat.us/200?sleep=10000
+
+Guaranteed DOWN	http://127.0.0.1:1
+
+---
 
 ## Design Decisions
 
-- Alerting logic extracted into pure functions for testability
+Alerting logic extracted into pure functions for deterministic testing
 
-- Background engine decoupled from request lifecycle
+Monitoring engine decoupled from request lifecycle
 
-- Ownership enforced at query level (no data leaks)
+Ownership enforced at query level (no cross-user data leakage)
 
-- Deterministic tests (no reliance on timers or schedulers)
+Time-series data modeled explicitly (check runs)
 
-## Roadmap
+Dockerized backend for reproducible execution
 
-- Frontend dashboard (React)
+---
 
-- Real-time updates (WebSockets)
+## Testing Strategy
 
-- Alert delivery channels (email, webhooks)
+Unit tests for alerting rules
 
-- Docker Compose (API + Mongo)
+Integration tests for API endpoints
+
+In-memory MongoDB for deterministic tests
+
+Frontend tested via component & query-level testing
+
+
+
+
+
+
+
 
