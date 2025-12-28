@@ -67,6 +67,11 @@ export function updateMonitor(id: string, input: UpdateMonitorInput) {
   });
 }
 
+export function getMonitorById(id: string) {
+  return api<{ monitor: Monitor }>(`/monitors/${id}`);
+}
+
+
 export function deleteMonitor(id: string) {
   return api<{ ok: true }>(`/monitors/${id}`, { method: "DELETE" });
 }
