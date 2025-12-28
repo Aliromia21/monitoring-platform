@@ -204,5 +204,52 @@ describe("Monitors CRUD", () => {
     .expect(404);
 });
 
+it("returns monitor summary with uptime and response times", async () => {
+  const token = await register(app, "summary@example.com");
+
+  const monitor = await createMonitor(app, token, {
+    name: "Summary",
+    url: "https://example.com/health",
+    interval: 60
+  });
+
+  const me = await request(app)
+    .get("/auth/me")
+    .set("Authorization", `Bearer ${token}`)
+    .expect(200);
+
+  const userId = me.body.user.id;
+  const now = Date.now();
+
+  await CheckRunModel.create([
+    {
+      monitorId: monitor.id,
+      userId,
+      timestamp: new Date(now - 1000),
+      status: "UP",
+      statusCode: 200,
+      responseTime: 100
+    },
+    {
+      monitorId: monitor.id,
+      userId,
+      timestamp: new Date(now - 2000),
+      status: "DOWN",
+      responseTime: 5000,
+      error: "timeout"
+    }
+  ]);
+
+  const res = await request(app)
+    .get(`/monitors/${monitor.id}/summary?windowHours=1`)
+    .set("Authorization", `Bearer ${token}`)
+    .expect(200);
+
+  expect(res.body.summary.totalChecks).toBe(2);
+  expect(res.body.summary.uptimePct).toBe(50);
+  expect(res.body.summary.avgResponseTimeMs).toBeTruthy();
+});
+
+
 });
 
