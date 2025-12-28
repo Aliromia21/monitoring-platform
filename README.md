@@ -40,19 +40,33 @@ The project focuses on observability, reliability, background processing, and te
 ---
 
 ## 🏗️ Architecture Overview
+
   apps/api
+  
   ├── src
+  
   │ ├── modules
+  
   │ │ ├── auth
+  
   │ │ ├── monitors
+  
   │ │ ├── checkruns
+  
   │ │ └── alerts
+  
   │ ├── engine
+  
   │ │ ├── monitoringEngine.ts
+  
   │ │ ├── httpCheck.ts
+  
   │ │ └── alertRules.ts
+  
   │ ├── middleware
+  
   │ └── config
+  
 
 
 - **API Server**: Node.js + Express
@@ -139,21 +153,21 @@ GET /monitors/:id/summary?windowHours=24
 
 ## Design Decisions
 
-Alerting logic extracted into pure functions for testability
+- Alerting logic extracted into pure functions for testability
 
-Background engine decoupled from request lifecycle
+- Background engine decoupled from request lifecycle
 
-Ownership enforced at query level (no data leaks)
+- Ownership enforced at query level (no data leaks)
 
-Deterministic tests (no reliance on timers or schedulers)
+- Deterministic tests (no reliance on timers or schedulers)
 
 ## Roadmap
 
-Frontend dashboard (React)
+- Frontend dashboard (React)
 
-Real-time updates (WebSockets)
+- Real-time updates (WebSockets)
 
-Alert delivery channels (email, webhooks)
+- Alert delivery channels (email, webhooks)
 
-Docker Compose (API + Mongo)
+- Docker Compose (API + Mongo)
 
