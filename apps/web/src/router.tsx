@@ -1,5 +1,6 @@
 import { createBrowserRouter } from "react-router-dom";
 import { AppLayout } from "./ui/AppLayout";
+import { RequireAuth } from "./ui/RequireAuth";
 import { MonitorsPage } from "./pages/MonitorsPage";
 import { MonitorDetailsPage } from "./pages/MonitorDetailsPage";
 import { AlertsPage } from "./pages/AlertsPage";
@@ -9,7 +10,11 @@ import { RegisterPage } from "./pages/RegisterPage";
 export const router = createBrowserRouter([
   {
     path: "/",
-    element: <AppLayout />,
+    element: (
+      <RequireAuth>
+        <AppLayout />
+      </RequireAuth>
+    ),
     children: [
       { index: true, element: <MonitorsPage /> },
       { path: "monitors/:id", element: <MonitorDetailsPage /> },
