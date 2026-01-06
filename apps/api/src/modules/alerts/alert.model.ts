@@ -10,6 +10,7 @@ export interface AlertDoc extends mongoose.Document {
   message: string;
 
   timestamp: Date;
+  readAt: Date | null;
 
   createdAt: Date;
   updatedAt: Date;
@@ -23,9 +24,14 @@ const alertSchema = new mongoose.Schema<AlertDoc>(
     type: { type: String, required: true, enum: ["DOWN", "RECOVERY"] },
     message: { type: String, required: true, maxlength: 500 },
 
+    readAt: { type: Date, default: null, index: true },
+
+
     timestamp: { type: Date, required: true, index: true }
   },
   { timestamps: true }
+
+
 );
 
 alertSchema.index({ monitorId: 1, timestamp: -1 });
