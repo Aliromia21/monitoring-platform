@@ -7,6 +7,7 @@ export type AlertItem = {
   type: "DOWN" | "RECOVERY";
   message: string;
   timestamp: string;
+  readAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -30,4 +31,16 @@ export function listAlerts(params?: { type?: "DOWN" | "RECOVERY"; page?: number;
   if (type) qs.set("type", type);
 
   return api<AlertsResponse>(`/alerts?${qs.toString()}`);
+}
+
+export function markAlertRead(alertId: string) {
+  return api<AlertItem>(`/alerts/${alertId}/read`, { method: "PATCH" });
+}
+
+export function markAllAlertsRead() {
+  return api<{ updated: number; readAt: string }>(`/alerts/read-all`, { method: "POST" });
+}
+
+export function getUnreadAlertsCount() {
+  return api<{ unread: number }>(`/alerts/unread-count`);
 }
