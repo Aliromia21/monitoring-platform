@@ -16,8 +16,13 @@ export function createApp() {
 
   app.get("/health", (_req, res) => res.json({ ok: true }));
 
+  app.get("/__whoami", (_req, res) =>
+  res.json({ from: "apps/api/src/app.ts", apiPrefix: true, port: env.port })
+);
+
+
   // All API routes
-  app.use(createRoutes());
+  app.use("/api", createRoutes());
 
   app.use(errorHandler);
   return app;
