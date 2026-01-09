@@ -6,8 +6,10 @@
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+
     "test": "cross-env NODE_ENV=test jest --runInBand",
-    "test:watch": "cross-env NODE_ENV=test jest --watch"
+    "test:watch": "cross-env NODE_ENV=test jest --watch",
+    "test:coverage": "cross-env NODE_ENV=test jest --runInBand --coverage"
   },
   "dependencies": {
     "bcrypt": "*",
@@ -26,15 +28,16 @@
     "@types/bcrypt": "*",
     "@types/cors": "*",
     "@types/express": "*",
-    "@types/jest": "*",
+    "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "*",
     "@types/node": "*",
-    "@types/supertest": "*",
+    "@types/supertest": "^6.0.3",
     "cross-env": "^10.1.0",
-    "jest": "*",
+    "jest": "^30.2.0",
     "mongodb-memory-server": "*",
-    "supertest": "*",
-    "ts-jest": "*",
+    "supertest": "^7.2.2",
+    "ts-jest": "^29.4.6",
+    "ts-node": "^10.9.2",
     "ts-node-dev": "*",
     "typescript": "*"
   },
@@ -46,6 +49,21 @@
     ],
     "setupFilesAfterEnv": [
       "<rootDir>/src/__tests__/setup.ts"
-    ]
+    ],
+    "clearMocks": true,
+    "coverageDirectory": "coverage",
+    "collectCoverageFrom": [
+      "src/**/*.ts",
+      "!src/**/__tests__/**",
+      "!src/server.ts"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 80,
+        "functions": 80,
+        "lines": 80,
+        "statements": 80
+      }
+    }
   }
 }

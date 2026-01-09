@@ -21,8 +21,8 @@ export function createApp() {
 );
 
 
-  // All API routes
-  app.use("/api", createRoutes());
+//  API routes
+  app.use(createRoutes());
 
   app.use(errorHandler);
   return app;
