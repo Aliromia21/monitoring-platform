@@ -1,12 +1,10 @@
-name: API Tests
+name: API CI
 
 on:
   push:
-    paths:
-      - "apps/api/**"
+    branches: [ main ]
   pull_request:
-    paths:
-      - "apps/api/**"
+    branches: [ main ]
 
 jobs:
   test-api:
@@ -28,11 +26,10 @@ jobs:
 
       - name: Run tests
         run: npm test -- --coverage
-       
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: ./apps/api/coverage
           fail_ci_if_error: true
-
