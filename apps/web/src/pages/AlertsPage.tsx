@@ -27,16 +27,26 @@ export function AlertsPage() {
   const [filter, setFilter] = useState<Filter>("ALL");
   const [page, setPage] = useState(1);
 
+  // Monitor filter: "ALL" أو monitorId معيّن
+  const [monitorFilter, setMonitorFilter] = useState<string>("ALL");
+
   const qc = useQueryClient();
 
   const typeParam = filter === "ALL" || filter === "UNREAD" ? undefined : filter;
+  const monitorIdParam = monitorFilter === "ALL" ? undefined : monitorFilter;
 
   /* =========================
      Alerts query
   ========================= */
   const q = useQuery<AlertsResponse>({
-    queryKey: ["alerts", { filter, page }],
-    queryFn: () => listAlerts({ type: typeParam as any, page, limit: 20 }),
+    queryKey: ["alerts", { filter, page, monitorId: monitorIdParam }],
+    queryFn: () =>
+      listAlerts({
+        type: typeParam as any,
+        page,
+        limit: 20,
+        monitorId: monitorIdParam
+      }),
     refetchInterval: 15000,
     refetchIntervalInBackground: true
   });
@@ -74,12 +84,12 @@ export function AlertsPage() {
      Actions: Mark read / Mark all read
   ========================= */
   async function onMarkRead(alertId: string) {
-    // Optimistic UI (optional): set readAt immediately
     const nowIso = new Date().toISOString();
 
-    const key = ["alerts", { filter, page }] as const;
+    const key = ["alerts", { filter, page, monitorId: monitorIdParam }] as const;
     const prev = qc.getQueryData<AlertsResponse>(key);
 
+    // Optimistic update
     qc.setQueryData<AlertsResponse>(key, (old) => {
       if (!old) return old as any;
       return {
@@ -91,7 +101,7 @@ export function AlertsPage() {
     try {
       const updated = await markAlertRead(alertId);
 
-      // If backend returns the updated alert, reconcile
+      // Reconcile with server response
       qc.setQueryData<AlertsResponse>(key, (old) => {
         if (!old) return old as any;
         return {
@@ -102,23 +112,24 @@ export function AlertsPage() {
         };
       });
     } catch (e) {
-      // Revert on failure
       qc.setQueryData(key, prev);
       throw e;
     }
   }
 
   async function onMarkAllRead() {
-    const key = ["alerts", { filter, page }] as const;
+    const key = ["alerts", { filter, page, monitorId: monitorIdParam }] as const;
     const prev = qc.getQueryData<AlertsResponse>(key);
 
-    // Optimistic
     const nowIso = new Date().toISOString();
+    // Optimistic
     qc.setQueryData<AlertsResponse>(key, (old) => {
       if (!old) return old as any;
       return {
         ...old,
-        items: old.items.map((a) => ((a.readAt ?? null) === null ? { ...a, readAt: nowIso } : a))
+        items: old.items.map((a) =>
+          (a.readAt ?? null) === null ? { ...a, readAt: nowIso } : a
+        )
       };
     });
 
@@ -126,12 +137,13 @@ export function AlertsPage() {
       const res = await markAllAlertsRead();
       const readAt = (res as any)?.readAt ?? nowIso;
 
-      // Normalize based on server timestamp
       qc.setQueryData<AlertsResponse>(key, (old) => {
         if (!old) return old as any;
         return {
           ...old,
-          items: old.items.map((a) => ((a.readAt ?? null) === null ? { ...a, readAt } : a))
+          items: old.items.map((a) =>
+            (a.readAt ?? null) === null ? { ...a, readAt } : a
+          )
         };
       });
     } catch (e) {
@@ -151,27 +163,50 @@ export function AlertsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Segmented
-            value={filter}
-            options={[
-              { value: "ALL", label: "All" },
-              { value: "UNREAD", label: "Unread" },
-              { value: "DOWN", label: "Down" },
-              { value: "RECOVERY", label: "Recovery" }
-            ]}
-            onChange={(v) => {
-              setFilter(v);
-              setPage(1);
-            }}
-          />
+        <div className="flex flex-col items-end gap-2">
+          {/* Monitor filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-slate-600">Monitor:</span>
+            <select
+              value={monitorFilter}
+              onChange={(e) => {
+                setMonitorFilter(e.target.value);
+                setPage(1);
+              }}
+              className="text-sm border border-slate-200 rounded-lg px-2 py-1 bg-white text-slate-700"
+            >
+              <option value="ALL">All monitors</option>
+              {(monitorsData?.items ?? []).map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-          <button
-            onClick={() => void q.refetch()}
-            className="rounded-lg px-3 py-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
-          >
-            Refresh
-          </button>
+          {/* Type filter + Refresh */}
+          <div className="flex items-center gap-3">
+            <Segmented
+              value={filter}
+              options={[
+                { value: "ALL", label: "All" },
+                { value: "UNREAD", label: "Unread" },
+                { value: "DOWN", label: "Down" },
+                { value: "RECOVERY", label: "Recovery" }
+              ]}
+              onChange={(v) => {
+                setFilter(v);
+                setPage(1);
+              }}
+            />
+
+            <button
+              onClick={() => void q.refetch()}
+              className="rounded-lg px-3 py-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
+            >
+              Refresh
+            </button>
+          </div>
         </div>
       </div>
 
@@ -196,7 +231,11 @@ export function AlertsPage() {
                 onClick={() => void onMarkAllRead()}
                 disabled={q.isLoading || q.isError || unreadCountOnPage === 0}
                 className="rounded-lg px-3 py-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 disabled:opacity-50"
-                title={unreadCountOnPage === 0 ? "No unread alerts on this page" : "Mark all alerts on this page as read"}
+                title={
+                  unreadCountOnPage === 0
+                    ? "No unread alerts on this page"
+                    : "Mark all alerts on this page as read"
+                }
               >
                 Mark all read
               </button>

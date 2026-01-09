@@ -20,18 +20,25 @@ export type AlertsResponse = {
   pages: number;
 };
 
-export function listAlerts(params?: { type?: "DOWN" | "RECOVERY"; page?: number; limit?: number }) {
+export function listAlerts(params?: {
+  type?: "DOWN" | "RECOVERY";
+  page?: number;
+  limit?: number;
+  monitorId?: string;
+}) {
   const type = params?.type;
   const page = params?.page ?? 1;
   const limit = params?.limit ?? 20;
+  const monitorId = params?.monitorId;
 
   const qs = new URLSearchParams();
   qs.set("page", String(page));
   qs.set("limit", String(limit));
   if (type) qs.set("type", type);
-
+  if (monitorId) qs.set("monitorId", monitorId);  
   return api<AlertsResponse>(`/alerts?${qs.toString()}`);
 }
+
 
 export function markAlertRead(alertId: string) {
   return api<AlertItem>(`/alerts/${alertId}/read`, { method: "PATCH" });
