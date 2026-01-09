@@ -4,6 +4,12 @@ Production-style monitoring platform for HTTP services, inspired by systems like
 
 This project demonstrates how to design and implement a **real-world monitoring system** with background workers, alerting semantics, historical metrics, and a modern dashboard — focusing on **observability, reliability, and testability**.
 
+| Service | Status |
+|--------|--------|
+| API CI | ![API Tests](https://github.com/Aliromia21/monitoring-platform/actions/workflows/api-ci.yml/badge.svg) |
+| Coverage | [![codecov](https://codecov.io/gh/Aliromia21/monitoring-platform/branch/main/graph/badge.svg?token=b313f617-c805-46be-b3ee-7455221a7183)](https://codecov.io/gh/Aliromia21/monitoring-platform) |
+
+
 ---
 
 ## Features
