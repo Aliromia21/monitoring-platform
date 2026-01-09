@@ -4,7 +4,7 @@ Production-style monitoring platform for HTTP services, inspired by systems like
 
 This project demonstrates how to design and implement a **real-world monitoring system** with background workers, alerting semantics, historical metrics, and a modern dashboard — focusing on **observability, reliability, and testability**.
 
-![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)
+![Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)
 
 | Service | Status |
 |--------|--------|
@@ -224,9 +224,12 @@ For this project, the focus is on:
 MIT License © Ali Romia
 
 ## Author
-Ali Romia  
+
+Ali Romia
+
 Software Engineer  
-- GitHub: https://github.com/Aliromia21
+
+- GitHub: https://github.com/Aliromia21 
 - LinkedIn: https://www.linkedin.com/in/aliromia/
 
 
