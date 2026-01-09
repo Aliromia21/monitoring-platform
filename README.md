@@ -4,10 +4,19 @@ Production-style monitoring platform for HTTP services, inspired by systems like
 
 This project demonstrates how to design and implement a **real-world monitoring system** with background workers, alerting semantics, historical metrics, and a modern dashboard — focusing on **observability, reliability, and testability**.
 
+![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)
+
 | Service | Status |
 |--------|--------|
 | API CI | ![API Tests](https://github.com/Aliromia21/monitoring-platform/actions/workflows/api-ci.yml/badge.svg) |
 | Coverage | [![codecov](https://codecov.io/gh/Aliromia21/monitoring-platform/branch/main/graph/badge.svg?token=b313f617-c805-46be-b3ee-7455221a7183)](https://codecov.io/gh/Aliromia21/monitoring-platform) |
+
+
+
+## Why this project exists:
+This repo simulates a lean version of real-world monitoring platforms. 
+The goal is to demonstrate distributed design, incident detection, 
+and observability concepts end to end.
 
 
 ---
@@ -156,7 +165,7 @@ http://localhost:5173
 
 Useful endpoints to demonstrate alerting and recovery:
 
-table uptime	https://www.google.com
+stable uptime	https://www.google.com
 
 Real API	https://api.github.com
 
@@ -192,20 +201,33 @@ In-memory MongoDB for deterministic tests
 
 Frontend tested via component & query-level testing
 
+## Testing & Coverage
+
+The backend API is covered by Jest integration tests (supertest + in-memory MongoDB).
+
+Currently, the **API layer** has ~94% line coverage.  
+For practicality, the coverage report explicitly **excludes**:
+
+- `src/engine/` – the long-running monitoring engine
+- `src/config/` – environment/config wiring
+
+These folders are more infrastructure/long-running process code and would require a different testing strategy .
+For this project, the focus is on:
+
+- HTTP endpoints behavior (auth, monitors, alerts, check runs)
+- Validation and error handling
+- Ownership/authorization rules
+
+
 ## License :
 
 MIT License © Ali Romia
 
-## Author :
-
-Ali Romia - Software Engineer
-
-GitHub: https://github.com/Aliromia21
-
-LinkedIn: https://www.linkedin.com/in/aliromia/
-
-
-
+## Author
+Ali Romia  
+Software Engineer  
+- GitHub: https://github.com/Aliromia21
+- LinkedIn: https://www.linkedin.com/in/aliromia/
 
 
 
