@@ -1,8 +1,10 @@
-# Monitoring Platform (SaaS)
+# 🚀 Monitoring Platform (SaaS)
 
-Production-style monitoring platform for HTTP services, inspired by systems like **Datadog**, **New Relic**, and **UptimeRobot**.
+> A high-performance, production-grade monitoring engine for HTTP services. Inspired by industry leaders like **Datadog** and **UptimeRobot**.
 
-This project demonstrates how to design and implement a **real-world monitoring system** with background workers, alerting semantics, historical metrics, and a modern dashboard — focusing on **observability, reliability, and testability**.
+[Live Demo](https://monitoring-v2.vercel.app) | [Backend API](https://monitoring-platform-production.up.railway.app/health)
+
+---
 
 ![Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)
 
@@ -11,227 +13,121 @@ This project demonstrates how to design and implement a **real-world monitoring 
 | API CI | ![API Tests](https://github.com/Aliromia21/monitoring-platform/actions/workflows/api-ci.yml/badge.svg) |
 | Coverage | [![codecov](https://codecov.io/gh/Aliromia21/monitoring-platform/branch/main/graph/badge.svg?token=b313f617-c805-46be-b3ee-7455221a7183)](https://codecov.io/gh/Aliromia21/monitoring-platform) |
 
-
+---
 
 ## Why this project exists:
 This repo simulates a lean version of real-world monitoring platforms. 
 The goal is to demonstrate distributed design, incident detection, 
 and observability concepts end to end.
 
+---
+
+## 🌐 System Architecture & Deployment
+
+This project is a modern **Monorepo** designed for scalability and high availability. It is currently deployed across a multi-cloud environment:
+
+* **Frontend:** Hosted on **Vercel** (Global Edge Network).
+* **Backend:** Containerized API and Background Engine running on **Railway**.
+* **Database:** Managed **MongoDB Atlas** Cluster (Time-series optimization).
+
+
 
 ---
 
-## Features
+## ✨ Features
 
-### Core
-- JWT-based authentication
-- Monitor CRUD with strict ownership enforcement
-- Secure, multi-user architecture
+### 🛡️ Core Infrastructure
+- **Secure Auth:** JWT-based authentication with stateless session management.
+- **Strict Multi-tenancy:** Ownership enforcement at the database level to prevent data leakage.
+- **Health Check Engine:** A decoupled, non-blocking background worker that executes periodic HTTP probes.
 
-### Monitoring Engine
-- Background scheduler (async, non-blocking)
-- Periodic HTTP health checks
-- Response time & availability tracking
-- Time-series check run storage
+### 📊 Observability & Metrics
+- **Performance Tracking:** Real-time response time (Latency) and availability metrics.
+- **Historical Analysis:** Time-series check-run storage for long-term reliability reporting.
+- **Visual Analytics:** Interactive latency and uptime charts using **Recharts**.
 
-### Alerting
-- DOWN alerts after consecutive failures
-- RECOVERY alerts only after confirmed DOWN
-- Guaranteed semantics:
-  - No duplicate DOWN alerts
-  - RECOVERY only after an actual outage
-
-### APIs
-- Monitors list & details
-- Check history  
-  `GET /monitors/:id/checks`
-- Alerts  
-  `GET /alerts`
-- Summary statistics  
-  `GET /monitors/:id/summary?windowHours=24`
-
-### Dashboard (Frontend)
-- Authentication flow (login / register)
-- Protected routes
-- Monitors overview
-- Monitor details:
-  - Uptime summary
-  - Latency & availability charts
-  - Check history table
-- Alerts page with polling and filtering
+### ⚠️ Smart Alerting Logic
+- **Consecutive Failure Thresholds:** Intelligent DOWN alerts to avoid false positives.
+- **State Machine Alerting:** - `DOWN` alert triggered only after $N$ consecutive failures.
+  - `RECOVERY` alert triggered only if a previous `DOWN` state was active.
 
 ---
 
-## Architecture Overview
+## 🛠️ Tech Stack
 
+| Layer | Technologies |
+|---|---|
+| **Frontend** | React 18, Vite, Tailwind CSS, React Query, Recharts |
+| **Backend** | Node.js, TypeScript, Express.js |
+| **Database** | MongoDB (Mongoose) |
+| **DevOps** | Docker, Docker Compose, GitHub Actions (CI/CD) |
+| **Deployment** | Vercel, Railway, MongoDB Atlas |
+
+---
+
+## 📂 Project Structure
+
+```text
 apps/
-
-├── api
-
-│ ├── modules
-
-│ │ ├── auth
-
-│ │ ├── monitors
-
-│ │ ├── checkruns
-
-│ │ └── alerts
-
-│ ├── engine
-
-│ │ ├── monitoringEngine.ts
-
-│ │ ├── httpCheck.ts
-
-│ │ └── alertRules.ts
-
-│ ├── middleware
-
-│ └── config
-
-│
-└── web
-
-├── pages
-
-├── ui
-
-└── api
+├── api/             # Node.js TypeScript Service
+│   ├── engine/      # Heart of the platform: The Monitoring Worker
+│   ├── modules/     # Domain-driven modules (Auth, Monitors, Alerts)
+│   └── tests/       # 94% Coverage Integration Tests
+└── web/             # React Dashboard
+    ├── ui/          # Reusable Tailwind Components
+    └── hooks/       # Custom React Query hooks for data fetching
 
 
------
-
-## Tech Stack
-
-**Backend**
-- Node.js + TypeScript
-- Express
-- MongoDB (time-series style collections)
-- Background monitoring engine (in-process workers)
-
-**Frontend**
-- React + Vite
-- Tailwind CSS
-- React Query
-- Recharts
-
-**Infrastructure**
-- Docker & Docker Compose
-- MongoDB container
-- CI-ready setup
-
----
+```
 
 ## Getting Started
 
 ### Prerequisites
-- Node.js ≥ 18
-- Docker Desktop (or Docker Engine)
+Node.js ≥ 20
+Docker Desktop
 
 ---
 
-### 1️⃣ Run Backend (API + MongoDB)
+### 1️⃣ Rapid Start with Docker
 
 From the repository root:
 
 ```bash
 docker compose up --build
 ```
-Backend API:
+### 2️⃣ Development Mode (Monorepo))
 ```
-http://localhost:4000
-```
-Health check:
-```
-GET http://localhost:4000/health
-```
-
-### 2️⃣ Run Frontend (Dashboard)
-In a new terminal:
-```
-cd apps/web
+# Install root dependencies
 npm install
-npm run dev
+
+# Run Backend
+cd apps/api && npm run dev
+
+# Run Frontend
+cd apps/web && npm run dev
 ```
-Frontend 
-```
-http://localhost:5173
-```
+
+Testing & Reliability
+The system is built with a Test-First mindset. The API layer maintains ~94% line coverage.
+
+Integration Tests: Using Jest and In-memory MongoDB.
+
+Rule Engine: Alerting logic is unit-tested with deterministic failure scenarios.
+
+CI/CD: Automated testing pipelines via GitHub Actions.
 
 ---
-
-## Example Test Monitors
-
-Useful endpoints to demonstrate alerting and recovery:
-
-stable uptime	https://www.google.com
-
-Real API	https://api.github.com
-
-Status failure	https://httpstat.us/500
-
-Timeout	https://httpstat.us/200?sleep=10000
-
-Guaranteed DOWN	http://127.0.0.1:1
-
----
-
-## Design Decisions
-
-Alerting logic extracted into pure functions for deterministic testing
-
-Monitoring engine decoupled from request lifecycle
-
-Ownership enforced at query level (no cross-user data leakage)
-
-Time-series data modeled explicitly (check runs)
-
-Dockerized backend for reproducible execution
-
----
-
-## Testing Strategy
-
-Unit tests for alerting rules
-
-Integration tests for API endpoints
-
-In-memory MongoDB for deterministic tests
-
-Frontend tested via component & query-level testing
-
-## Testing & Coverage
-
-The backend API is covered by Jest integration tests (supertest + in-memory MongoDB).
-
-Currently, the **API layer** has ~94% line coverage.  
-For practicality, the coverage report explicitly **excludes**:
-
-- `src/engine/` – the long-running monitoring engine
-- `src/config/` – environment/config wiring
-
-These folders are more infrastructure/long-running process code and would require a different testing strategy .
-For this project, the focus is on:
-
-- HTTP endpoints behavior (auth, monitors, alerts, check runs)
-- Validation and error handling
-- Ownership/authorization rules
-
-
-## License :
-
-MIT License © Ali Romia
 
 ## Author
 
-Ali Romia
-
-Software Engineer  
+Ali Romia - Software Engineer
 
 - GitHub: https://github.com/Aliromia21 
 - LinkedIn: https://www.linkedin.com/in/aliromia/
 
+## License :
+
+MIT License © Ali Romia 2026
 
 
 
