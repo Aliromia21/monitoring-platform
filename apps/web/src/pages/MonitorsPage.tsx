@@ -96,7 +96,7 @@ export function MonitorsPage() {
         <div className="text-rose-600 text-sm">
           Failed to load monitors: {(q.error as any)?.message ?? "Unknown error"}
         </div>
-      ) : q.data.items.length === 0 ? (
+      ) : q.data?.items.length === 0 ? (
         <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-soft">
           <div className="font-medium mb-1">No monitors yet</div>
           <div className="text-sm text-slate-600">
@@ -106,7 +106,7 @@ export function MonitorsPage() {
         </div>
       ) : (
         <div className="grid gap-4">
-          {q.data.items.map((m) => (
+          {q.data?.items.map((m) => (
             <Link
               key={m.id}
               to={`/monitors/${m.id}`}
