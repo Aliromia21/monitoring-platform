@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://monitoring-platform-production.up.railway.app/:path*"
+    }
+  ]
+}
