@@ -22,7 +22,7 @@ and observability concepts end to end.
 
 ---
 
-## 🌐 System Architecture & Deployment
+## System Architecture & Deployment
 
 This project is a modern **Monorepo** designed for scalability and high availability. It is currently deployed across a multi-cloud environment:
 
@@ -34,26 +34,26 @@ This project is a modern **Monorepo** designed for scalability and high availabi
 
 ---
 
-## ✨ Features
+## Features
 
-### 🛡️ Core Infrastructure
+### Core Infrastructure
 - **Secure Auth:** JWT-based authentication with stateless session management.
 - **Strict Multi-tenancy:** Ownership enforcement at the database level to prevent data leakage.
 - **Health Check Engine:** A decoupled, non-blocking background worker that executes periodic HTTP probes.
 
-### 📊 Observability & Metrics
+### Observability & Metrics
 - **Performance Tracking:** Real-time response time (Latency) and availability metrics.
 - **Historical Analysis:** Time-series check-run storage for long-term reliability reporting.
 - **Visual Analytics:** Interactive latency and uptime charts using **Recharts**.
 
-### ⚠️ Smart Alerting Logic
+### Smart Alerting Logic
 - **Consecutive Failure Thresholds:** Intelligent DOWN alerts to avoid false positives.
 - **State Machine Alerting:** - `DOWN` alert triggered only after $N$ consecutive failures.
   - `RECOVERY` alert triggered only if a previous `DOWN` state was active.
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer | Technologies |
 |---|---|
@@ -107,7 +107,8 @@ cd apps/api && npm run dev
 cd apps/web && npm run dev
 ```
 
-Testing & Reliability
+## Testing & Reliability
+
 The system is built with a Test-First mindset. The API layer maintains ~94% line coverage.
 
 Integration Tests: Using Jest and In-memory MongoDB.
