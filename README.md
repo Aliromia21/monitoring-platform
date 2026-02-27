@@ -2,7 +2,7 @@
 
 > A high-performance, production-grade monitoring engine for HTTP services. Inspired by industry leaders like **Datadog** and **UptimeRobot**.
 
-[Live Demo](https://monitoring-v2.vercel.app) | [Backend API](https://monitoring-platform-production.up.railway.app/health)
+[Live Demo](https://monitoring-v2.vercel.app) | [Backend API](https://monitoring-platform-production.up.railway.app)
 
 ---
 
