@@ -6,13 +6,13 @@
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-
     "test": "cross-env NODE_ENV=test jest --runInBand",
     "test:watch": "cross-env NODE_ENV=test jest --watch",
     "test:coverage": "cross-env NODE_ENV=test jest --runInBand --coverage"
   },
   "dependencies": {
     "bcrypt": "*",
+    "bullmq": "^5.70.1",
     "cors": "*",
     "dotenv": "*",
     "express": "*",
@@ -41,18 +41,18 @@
     "ts-node-dev": "*",
     "typescript": "*"
   },
- "jest": {
-  "preset": "ts-jest",
-  "testEnvironment": "node",
-  "testMatch": [
-    "**/__tests__/**/*.test.ts"
-  ],
-  "setupFilesAfterEnv": [
-    "<rootDir>/src/__tests__/setup.ts"
-  ],
-  "coveragePathIgnorePatterns": [
-    "<rootDir>/src/engine/",
-    "<rootDir>/src/config/"
-  ]
-}
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/__tests__/**/*.test.ts"
+    ],
+    "setupFilesAfterEnv": [
+      "<rootDir>/src/__tests__/setup.ts"
+    ],
+    "coveragePathIgnorePatterns": [
+      "<rootDir>/src/engine/",
+      "<rootDir>/src/config/"
+    ]
+  }
 }

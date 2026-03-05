@@ -14,7 +14,6 @@ export const env = {
   nodeEnv,
   port: Number(process.env.PORT ?? "4000"),
 
-  // في التست لا نحتاج Mongo URI لأننا نستخدم MongoMemoryServer
   mongodbUri: isTest ? (process.env.MONGODB_URI ?? "") : requireEnv("MONGODB_URI"),
 
   jwtSecret: process.env.JWT_SECRET ?? (isTest ? "test_secret" : requireEnv("JWT_SECRET")),
@@ -22,5 +21,8 @@ export const env = {
 
   bcryptCost: Number(process.env.BCRYPT_COST ?? "12"),
 
-  corsOrigin: process.env.CORS_ORIGIN ?? "*"
+  corsOrigin: process.env.CORS_ORIGIN ?? "*",
+
+  //Redis connection URL for BullMQ
+  redisUrl: process.env.REDIS_URL ?? "redis://localhost:6379"
 };

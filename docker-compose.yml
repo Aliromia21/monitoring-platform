@@ -12,6 +12,36 @@ services:
       timeout: 5s
       retries: 10
 
+  # Redis as the Message Broker
+  # alpine = lightweight image 
+  # appendonly yes 
+  redis:
+    image: redis:7-alpine
+    container_name: monitoring-redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"    
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Visual UI for Redis
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: monitoring-redis-ui
+    restart: unless-stopped
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+
   api:
     build:
       context: ./apps/api
@@ -26,9 +56,13 @@ services:
       JWT_SECRET: change_me_in_compose
       JWT_EXPIRES_IN: 7d
       CORS_ORIGIN: "*"
+      REDIS_URL: redis://redis:6379   # Redis address inside the Docker network
     depends_on:
       mongo:
+        condition: service_healthy
+      redis:                          # Waiting for Redis to be healthy first
         condition: service_healthy
 
 volumes:
   mongo_data:
+  redis_data:   
