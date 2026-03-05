@@ -10,6 +10,18 @@ jobs:
   test-api:
     runs-on: ubuntu-latest
 
+    # ✨ NEW — spin up a Redis container during CI
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     defaults:
       run:
         working-directory: apps/api
@@ -26,6 +38,8 @@ jobs:
 
       - name: Run tests
         run: npm test -- --coverage
+        env:
+          REDIS_URL: redis://localhost:6379  
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
