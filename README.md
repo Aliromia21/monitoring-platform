@@ -1,4 +1,4 @@
-# 🚀 Monitoring Platform (SaaS)
+# Monitoring Platform (SaaS)
 
 > A high-performance, production-grade monitoring engine for HTTP services. Inspired by industry leaders like **Datadog** and **UptimeRobot**.
 
@@ -65,7 +65,7 @@ This project is a modern **Monorepo** designed for scalability and high availabi
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 apps/
