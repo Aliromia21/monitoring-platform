@@ -1,6 +1,7 @@
 import { createApp } from "./app";
 import { connectDb } from "./config/db";
 import { startMonitoringEngine } from "./engine/monitoringEngine";
+import { startWorker } from "./worker/monitorWorker"; 
 import { env } from "./config/env";
 
 async function main() {
@@ -11,6 +12,7 @@ async function main() {
   const shouldRunEngine = env.nodeEnv === "development" || env.nodeEnv === "production";
   if (shouldRunEngine) {
     startMonitoringEngine({ tickMs: 2000, maxConcurrency: 10 });
+    startWorker(); 
   }
 
   app.listen(env.port, () => {
