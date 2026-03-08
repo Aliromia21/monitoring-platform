@@ -1,6 +1,5 @@
 import { MongoMemoryServer } from "mongodb-memory-server";
 import mongoose from "mongoose";
-import { redisConnection } from "../config/redis";
 import { monitorQueue } from "../queue/index";
 
 let mongo: MongoMemoryServer;
@@ -23,7 +22,5 @@ afterEach(async () => {
 afterAll(async () => {
   await mongoose.disconnect();
   await mongo.stop();
-
   await monitorQueue.close();
-  
 });

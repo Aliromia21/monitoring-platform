@@ -10,7 +10,7 @@ import { decideAlert } from "../engine/alertRules";
 
 const ALERT_THRESHOLD = 3;
 
-async function processJob(job: Job<MonitorCheckJobData>): Promise<void> {
+export async function processJob(job: Job<MonitorCheckJobData>): Promise<void> {
   const m = job.data;
 
   // 1. Run the HTTP check
