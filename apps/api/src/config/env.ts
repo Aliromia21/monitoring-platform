@@ -23,6 +23,10 @@ export const env = {
 
   corsOrigin: process.env.CORS_ORIGIN ?? "*",
 
-  //Redis connection URL for BullMQ
-  redisUrl: process.env.REDIS_URL ?? "redis://localhost:6379"
+  redisUrl: process.env.REDIS_URL ?? "redis://localhost:6379",
+
+  // Email
+  smtpUser: isTest ? "test@example.com" : requireEnv("SMTP_USER"),
+  smtpPass: isTest ? "test_pass"        : requireEnv("SMTP_PASS"),
+  smtpFrom: process.env.SMTP_FROM ?? "Monitoring Platform <noreply@example.com>",
 };

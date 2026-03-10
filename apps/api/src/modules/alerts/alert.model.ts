@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-export type AlertType = "DOWN" | "RECOVERY";
+export type AlertType = "DOWN" | "RECOVERY" | "SYSTEM_ERROR";
 
 export interface AlertDoc extends mongoose.Document {
   monitorId: mongoose.Types.ObjectId;
@@ -21,7 +21,7 @@ const alertSchema = new mongoose.Schema<AlertDoc>(
     monitorId: { type: mongoose.Schema.Types.ObjectId, ref: "Monitor", required: true, index: true },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
 
-    type: { type: String, required: true, enum: ["DOWN", "RECOVERY"] },
+type: { type: String, required: true, enum: ["DOWN", "RECOVERY", "SYSTEM_ERROR"] },
     message: { type: String, required: true, maxlength: 500 },
 
     readAt: { type: Date, default: null, index: true },

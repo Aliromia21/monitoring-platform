@@ -7,6 +7,8 @@ import { AlertModel } from "../modules/alerts/alert.model";
 import { MonitorModel } from "../modules/monitors/monitor.model";
 import * as httpCheckModule from "../engine/httpCheck";
 import { decideAlert } from "../engine/alertRules";
+import { sendAlertNotification } from "../notifications/notificationService";
+import { UserModel } from "../modules/users/user.model";
 
 const ALERT_THRESHOLD = 3;
 
@@ -68,7 +70,7 @@ export async function processJob(
     current: { status: result.status },
   });
 
-  // 4. Create alert if needed
+   // 4. Create alert + send notification if needed
   if (decision) {
     await AlertModel.create({
       monitorId: new mongoose.Types.ObjectId(m.monitorId),
@@ -77,8 +79,26 @@ export async function processJob(
       message:   decision.message,
       timestamp,
     });
-  }
 
+    // Send email notification — fire and forget, don't block the job
+    const [user, monitor] = await Promise.all([
+      UserModel.findById(m.userId),
+      MonitorModel.findById(m.monitorId),
+    ]);
+
+    if (user && monitor) {
+      sendAlertNotification({
+        to:          user.email,
+        monitorName: monitor.name,
+        url:         monitor.url,
+        type:        decision.type,
+        message:     decision.message,
+        timestamp,
+      }).catch((err) => {
+        console.error(`[Notifications] Failed to send email:`, err.message);
+      });
+    }
+  }
   // 5. Update monitor
   const failures = result.status === "DOWN" ? m.consecutiveFailures + 1 : 0;
 
