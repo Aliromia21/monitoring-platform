@@ -126,7 +126,7 @@ cd apps/web && npm run dev
 
 ## Testing & Reliability
 
-- The system is built with a Test-First mindset. The API layer maintains ~94% line coverage.
+- The system is built with a Test-First mindset. The API layer maintains ~85% line coverage.
 
 - Integration Tests: Using Jest and In-memory MongoDB.
 
