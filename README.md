@@ -29,6 +29,7 @@ This project is a modern **Monorepo** designed for scalability and high availabi
 * **Frontend:** Hosted on **Vercel** (Global Edge Network).
 * **Backend:** Containerized API and Background Engine running on **Railway**.
 * **Database:** Managed **MongoDB Atlas** Cluster (Time-series optimization).
+* **Queue:** Redis on Railway for job persistence and distribution
 
 
 
@@ -41,15 +42,27 @@ This project is a modern **Monorepo** designed for scalability and high availabi
 - **Strict Multi-tenancy:** Ownership enforcement at the database level to prevent data leakage.
 - **Health Check Engine:** A decoupled, non-blocking background worker that executes periodic HTTP probes.
 
+### Distributed Queue Architecture
+
+- **Producer/Consumer Pattern:** Monitoring engine enqueues jobs into BullMQ — completely decoupled from execution
+- **Job Persistence:** Jobs survive server restarts — Redis guarantees no check is lost
+- **Retry Logic:** Automatic exponential backoff (3 attempts) on transient failures
+- **Dead Letter Queue:** Jobs that exhaust all retries are moved to a separate queue for inspection and alerting — no silent failures
+- **Horizontal Scaling Ready:** Multiple Worker instances can process jobs concurrently with zero duplication
+
 ### Observability & Metrics
 - **Performance Tracking:** Real-time response time (Latency) and availability metrics.
 - **Historical Analysis:** Time-series check-run storage for long-term reliability reporting.
 - **Visual Analytics:** Interactive latency and uptime charts using **Recharts**.
+- **Queue Stats API:** Live visibility into waiting, active, completed, and failed job counts
+
+
 
 ### Smart Alerting Logic
 - **Consecutive Failure Thresholds:** Intelligent DOWN alerts to avoid false positives.
 - **State Machine Alerting:** - `DOWN` alert triggered only after $N$ consecutive failures.
   - `RECOVERY` alert triggered only if a previous `DOWN` state was active.
+
 
 ---
 
@@ -59,6 +72,7 @@ This project is a modern **Monorepo** designed for scalability and high availabi
 |---|---|
 | **Frontend** | React 18, Vite, Tailwind CSS, React Query, Recharts |
 | **Backend** | Node.js, TypeScript, Express.js |
+| **Queue** | BullMQ ,Redis |
 | **Database** | MongoDB (Mongoose) |
 | **DevOps** | Docker, Docker Compose, GitHub Actions (CI/CD) |
 | **Deployment** | Vercel, Railway, MongoDB Atlas |
@@ -68,15 +82,18 @@ This project is a modern **Monorepo** designed for scalability and high availabi
 ## Project Structure
 
 ```text
-apps/
-├── api/             # Node.js TypeScript Service
-│   ├── engine/      # Heart of the platform: The Monitoring Worker
-│   ├── modules/     # Domain-driven modules (Auth, Monitors, Alerts)
-│   └── tests/       # 94% Coverage Integration Tests
-└── web/             # React Dashboard
-    ├── ui/          # Reusable Tailwind Components
-    └── hooks/       # Custom React Query hooks for data fetching
 
+apps/
+├── api/                    # Node.js TypeScript Service
+│   ├── engine/             # Monitoring Engine — Producer
+│   ├── queue/              # BullMQ Queue definition and helpers
+│   ├── worker/             # BullMQ Worker — Consumer + Dead Letter Queue
+│   ├── notifications/      # Email notification service
+│   ├── modules/            # Domain-driven modules (Auth, Monitors, Alerts)
+│   └── __tests__/          # 31 integration tests — 94% coverage
+└── web/                    # React Dashboard
+    ├── ui/                 # Reusable Tailwind Components
+    └── hooks/              # Custom React Query hooks
 
 ```
 
@@ -109,13 +126,17 @@ cd apps/web && npm run dev
 
 ## Testing & Reliability
 
-The system is built with a Test-First mindset. The API layer maintains ~94% line coverage.
+- The system is built with a Test-First mindset. The API layer maintains ~94% line coverage.
 
-Integration Tests: Using Jest and In-memory MongoDB.
+- Integration Tests: Using Jest and In-memory MongoDB.
 
-Rule Engine: Alerting logic is unit-tested with deterministic failure scenarios.
+- Worker Tests: Dependency injection pattern for deterministic job processing tests
 
-CI/CD: Automated testing pipelines via GitHub Actions.
+- Queue Tests: Real Redis integration tests for Producer and Stats
+
+- Rule Engine: Alerting logic is unit-tested with deterministic failure scenarios.
+
+- CI/CD: Automated testing pipelines via GitHub Actions.
 
 ---
 
