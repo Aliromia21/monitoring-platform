@@ -90,7 +90,7 @@ apps/
 │   ├── worker/             # BullMQ Worker — Consumer + Dead Letter Queue
 │   ├── notifications/      # Email notification service
 │   ├── modules/            # Domain-driven modules (Auth, Monitors, Alerts)
-│   └── __tests__/          # 31 integration tests — 94% coverage
+│   └── __tests__/          # 31 integration tests — 85% coverage
 └── web/                    # React Dashboard
     ├── ui/                 # Reusable Tailwind Components
     └── hooks/              # Custom React Query hooks
