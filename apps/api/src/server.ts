@@ -10,10 +10,10 @@ async function main() {
   const app = createApp();
 
   const shouldRunEngine = env.nodeEnv === "development" || env.nodeEnv === "production";
-  if (shouldRunEngine) {
-    startMonitoringEngine({ tickMs: 2000, maxConcurrency: 10 });
-    startWorker(); 
-  }
+if (shouldRunEngine) {
+  startMonitoringEngine({ tickMs: 2000, maxConcurrency: 10 });
+  startWorker(); 
+}
 
   app.listen(env.port, () => {
     console.log(`API listening on http://localhost:${env.port}`);

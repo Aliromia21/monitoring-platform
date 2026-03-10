@@ -3,13 +3,14 @@ import { MonitorModel } from "../modules/monitors/monitor.model";
 import { CheckRunModel } from "../modules/checkruns/checkrun.model";
 import { AlertModel } from "../modules/alerts/alert.model";
 import { processJob } from "../worker/monitorWorker";
-import * as httpCheck from "../engine/httpCheck";
 import { MonitorCheckJobData } from "../queue/index";
+import { HttpCheckResult } from "../engine/httpCheck";
 
-jest.mock("../engine/httpCheck");
-const mockRunHttpCheck = httpCheck.runHttpCheck as jest.MockedFunction<
-  typeof httpCheck.runHttpCheck
->;
+const mockRunHttpCheck = jest.fn<Promise<HttpCheckResult>, [any]>();
+
+beforeEach(() => {
+  jest.clearAllMocks();
+});
 
 function makeJob(data: MonitorCheckJobData) {
   return { id: "test-job-1", data } as any;
@@ -34,14 +35,10 @@ describe("Worker — processJob", () => {
 
   it("saves a CheckRun with status UP when HTTP check succeeds", async () => {
     mockRunHttpCheck.mockResolvedValueOnce({
-      status: "UP",
-      statusCode: 200,
-      responseTime: 123,
-      error: null,
+      status: "UP", statusCode: 200, responseTime: 123, error: null,
     });
-
     const data = makeJobData();
-    await processJob(makeJob(data));
+    await processJob(makeJob(data), mockRunHttpCheck);
 
     const checkRun = await CheckRunModel.findOne({ monitorId: data.monitorId });
     expect(checkRun).not.toBeNull();
@@ -52,14 +49,10 @@ describe("Worker — processJob", () => {
 
   it("saves a CheckRun with status DOWN when HTTP check fails", async () => {
     mockRunHttpCheck.mockResolvedValueOnce({
-      status: "DOWN",
-      statusCode: null,
-      responseTime: 5000,
-      error: "timeout after 5000ms",
+      status: "DOWN", statusCode: null, responseTime: 5000, error: "timeout after 5000ms",
     });
-
     const data = makeJobData();
-    await processJob(makeJob(data));
+    await processJob(makeJob(data), mockRunHttpCheck);
 
     const checkRun = await CheckRunModel.findOne({ monitorId: data.monitorId });
     expect(checkRun?.status).toBe("DOWN");
@@ -68,12 +61,8 @@ describe("Worker — processJob", () => {
 
   it("updates monitor nextCheckAt and lastStatus after successful check", async () => {
     mockRunHttpCheck.mockResolvedValueOnce({
-      status: "UP",
-      statusCode: 200,
-      responseTime: 100,
-      error: null,
+      status: "UP", statusCode: 200, responseTime: 100, error: null,
     });
-
     const monitor = await MonitorModel.create({
       userId:         new mongoose.Types.ObjectId(),
       name:           "Test Monitor",
@@ -84,9 +73,8 @@ describe("Worker — processJob", () => {
       expectedStatus: 200,
       enabled:        true,
     });
-
     const data = makeJobData({ monitorId: monitor._id.toString() });
-    await processJob(makeJob(data));
+    await processJob(makeJob(data), mockRunHttpCheck);
 
     const updated = await MonitorModel.findById(monitor._id);
     expect(updated?.lastStatus).toBe("UP");
@@ -96,18 +84,11 @@ describe("Worker — processJob", () => {
 
   it("creates a DOWN alert after threshold consecutive failures", async () => {
     mockRunHttpCheck.mockResolvedValueOnce({
-      status: "DOWN",
-      statusCode: 500,
-      responseTime: 200,
+      status: "DOWN", statusCode: 500, responseTime: 200,
       error: "Unexpected status code: 500 (expected 200)",
     });
-
-    const data = makeJobData({
-      consecutiveFailures: 2, 
-      lastStatus: "DOWN",
-    });
-
-    await processJob(makeJob(data));
+    const data = makeJobData({ consecutiveFailures: 2, lastStatus: "DOWN" });
+    await processJob(makeJob(data), mockRunHttpCheck);
 
     const alert = await AlertModel.findOne({ monitorId: data.monitorId });
     expect(alert).not.toBeNull();
@@ -116,18 +97,10 @@ describe("Worker — processJob", () => {
 
   it("creates a RECOVERY alert when monitor comes back UP after being DOWN", async () => {
     mockRunHttpCheck.mockResolvedValueOnce({
-      status: "UP",
-      statusCode: 200,
-      responseTime: 150,
-      error: null,
+      status: "UP", statusCode: 200, responseTime: 150, error: null,
     });
-
-    const data = makeJobData({
-      consecutiveFailures: 3,
-      lastStatus: "DOWN",
-    });
-
-    await processJob(makeJob(data));
+    const data = makeJobData({ consecutiveFailures: 3, lastStatus: "DOWN" });
+    await processJob(makeJob(data), mockRunHttpCheck);
 
     const alert = await AlertModel.findOne({ monitorId: data.monitorId });
     expect(alert).not.toBeNull();
@@ -136,18 +109,11 @@ describe("Worker — processJob", () => {
 
   it("does not create an alert on first failure", async () => {
     mockRunHttpCheck.mockResolvedValueOnce({
-      status: "DOWN",
-      statusCode: 500,
-      responseTime: 200,
+      status: "DOWN", statusCode: 500, responseTime: 200,
       error: "Unexpected status code: 500",
     });
-
-    const data = makeJobData({
-      consecutiveFailures: 0,
-      lastStatus: "UP",
-    });
-
-    await processJob(makeJob(data));
+    const data = makeJobData({ consecutiveFailures: 0, lastStatus: "UP" });
+    await processJob(makeJob(data), mockRunHttpCheck);
 
     const alert = await AlertModel.findOne({ monitorId: data.monitorId });
     expect(alert).toBeNull();

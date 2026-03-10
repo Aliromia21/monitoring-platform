@@ -1,20 +1,43 @@
-import { Worker, Job } from "bullmq";
+import { Worker, Job, Queue } from "bullmq";
 import mongoose from "mongoose";
 import { redisConnection } from "../config/redis";
 import { MonitorCheckJobData } from "../queue/index";
 import { CheckRunModel } from "../modules/checkruns/checkrun.model";
 import { AlertModel } from "../modules/alerts/alert.model";
 import { MonitorModel } from "../modules/monitors/monitor.model";
-import { runHttpCheck } from "../engine/httpCheck";
+import * as httpCheckModule from "../engine/httpCheck";
 import { decideAlert } from "../engine/alertRules";
 
 const ALERT_THRESHOLD = 3;
 
-export async function processJob(job: Job<MonitorCheckJobData>): Promise<void> {
+// ── Dead Letter Queue ────────────────────────────────────────────────
+// Jobs that fail all 3 retry attempts land here for inspection/alerting
+export const deadLetterQueue = new Queue<DeadLetterJobData>(
+  "monitor-checks-failed",
+  {
+    connection: redisConnection,
+    defaultJobOptions: {
+      removeOnComplete: { count: 500 },
+      removeOnFail:     { age: 7 * 24 * 3600 }, // keep for 7 days
+    },
+  }
+);
+
+export type DeadLetterJobData = {
+  originalJob: MonitorCheckJobData;
+  errorMessage: string;
+  failedAt: string;
+  attemptsMade: number;
+};
+
+// ── Main Job Processor ───────────────────────────────────────────────
+export async function processJob(
+  job: Job<MonitorCheckJobData>,
+  httpCheck: typeof import("../engine/httpCheck").runHttpCheck = httpCheckModule.runHttpCheck
+): Promise<void> {
   const m = job.data;
 
-  // 1. Run the HTTP check
-  const result = await runHttpCheck({
+  const result = await httpCheck({
     url:            m.url,
     method:         m.method,
     timeoutMs:      m.timeoutMs,
@@ -74,13 +97,35 @@ export async function processJob(job: Job<MonitorCheckJobData>): Promise<void> {
   );
 }
 
+// ── Dead Letter Queue Processor ──────────────────────────────────────
+// Processes Jobs that exhausted all retries
+async function processDeadLetter(job: Job<DeadLetterJobData>): Promise<void> {
+  const { originalJob, errorMessage, failedAt, attemptsMade } = job.data;
+
+  console.error(
+    `[DLQ] Monitor ${originalJob.monitorId} failed ${attemptsMade} times — ${errorMessage}`
+  );
+
+  // SYSTEM_ERROR alert so the user knows something is wrong
+  // monitoring infrastructure itself, not just the target URL
+  await AlertModel.create({
+    monitorId: new mongoose.Types.ObjectId(originalJob.monitorId),
+    userId:    new mongoose.Types.ObjectId(originalJob.userId),
+    type:      "SYSTEM_ERROR",
+    message:   `Monitor check failed ${attemptsMade} times — ${errorMessage}`,
+    timestamp: new Date(failedAt),
+  });
+}
+
+// ── Start Worker ─────────────────────────────────────────────────────
 export function startWorker() {
-  const worker = new Worker<MonitorCheckJobData>(
-    "monitor-checks",
-    processJob,
+  // Main worker
+ const worker = new Worker<MonitorCheckJobData>(
+  "monitor-checks",
+  (job) => processJob(job),
     {
-      connection:   redisConnection,
-      concurrency:  10,
+      connection:  redisConnection,
+      concurrency: 10,
     }
   );
 
@@ -88,11 +133,41 @@ export function startWorker() {
     console.log(`[Worker] Job ${job.id} completed — monitor ${job.data.monitorId}`);
   });
 
-  worker.on("failed", (job, err) => {
+  // When a Job exhausts all retries → move to Dead Letter Queue
+  worker.on("failed", async (job, err) => {
     console.error(`[Worker] Job ${job?.id} failed:`, err.message);
+
+    if (!job) return;
+
+    const isLastAttempt = job.attemptsMade >= (job.opts.attempts ?? 1);
+
+    if (isLastAttempt) {
+      await deadLetterQueue.add("dead-letter", {
+        originalJob:  job.data,
+        errorMessage: err.message,
+        failedAt:     new Date().toISOString(),
+        attemptsMade: job.attemptsMade,
+      });
+
+      console.error(
+        `[Worker] Job ${job.id} moved to Dead Letter Queue after ${job.attemptsMade} attempts`
+      );
+    }
   });
 
-  console.log("[Worker]  Monitor worker started");
+  // Dead Letter Queue worker
+  const dlqWorker = new Worker<DeadLetterJobData>(
+    "monitor-checks-failed",
+    processDeadLetter,
+    { connection: redisConnection }
+  );
 
-  return worker;
+  dlqWorker.on("failed", (job, err) => {
+    console.error(`[DLQ Worker] Failed to process dead letter job:`, err.message);
+  });
+
+  console.log("[Worker] Monitor worker started");
+  console.log("[Worker] Dead Letter Queue worker started");
+
+  return { worker, dlqWorker };
 }
