@@ -1,25 +1,10 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import { env } from "../config/env";
 
-// ── Transporter 
-//fake transporter that never sends real emails for testing 
-function createTransporter() {
-  if (env.nodeEnv === "test") {
-    return nodemailer.createTransport({ jsonTransport: true });
-  }
+// ── Client ───────────────────────────────────────────────────────────
+const resend = env.nodeEnv === "test" ? null : new Resend(env.resendApiKey);
 
-  return nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: env.smtpUser,
-      pass: env.smtpPass,
-    },
-  });
-}
-
-export const transporter = createTransporter();
-
-// ── Email Templates
+// ── Email Templates ──────────────────────────────────────────────────
 export type NotificationPayload = {
   to: string;
   monitorName: string;
@@ -31,8 +16,8 @@ export type NotificationPayload = {
 
 function buildSubject(payload: NotificationPayload): string {
   switch (payload.type) {
-    case "DOWN":        return `🔴 DOWN: ${payload.monitorName} is unreachable`;
-    case "RECOVERY":    return `🟢 RECOVERY: ${payload.monitorName} is back online`;
+    case "DOWN":         return `🔴 DOWN: ${payload.monitorName} is unreachable`;
+    case "RECOVERY":     return `🟢 RECOVERY: ${payload.monitorName} is back online`;
     case "SYSTEM_ERROR": return `⚠️ ERROR: ${payload.monitorName} check failed`;
   }
 }
@@ -66,18 +51,26 @@ function buildText(payload: NotificationPayload): string {
   }
 }
 
-// ── Main Function 
+// ── Main Function ────────────────────────────────────────────────────
 export async function sendAlertNotification(
   payload: NotificationPayload
 ): Promise<void> {
-  const mailOptions = {
+  // Skip in test environment
+  if (!resend) {
+    console.log(`[Notifications] Test mode — skipping email to ${payload.to}`);
+    return;
+  }
+
+  const { error } = await resend.emails.send({
     from:    env.smtpFrom,
     to:      payload.to,
     subject: buildSubject(payload),
     text:    buildText(payload),
-  };
+  });
 
-  await transporter.sendMail(mailOptions);
+  if (error) {
+    throw new Error(`Resend error: ${error.message}`);
+  }
 
   console.log(`[Notifications] Sent ${payload.type} email to ${payload.to} for ${payload.monitorName}`);
 }

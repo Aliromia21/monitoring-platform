@@ -24,9 +24,7 @@ export const env = {
   corsOrigin: process.env.CORS_ORIGIN ?? "*",
 
   redisUrl: process.env.REDIS_URL ?? "redis://localhost:6379",
-
-  // Email
-  smtpUser: isTest ? "test@example.com" : requireEnv("SMTP_USER"),
-  smtpPass: isTest ? "test_pass"        : requireEnv("SMTP_PASS"),
-  smtpFrom: process.env.SMTP_FROM ?? "Monitoring Platform <noreply@example.com>",
+  // Email — Resend
+  resendApiKey: isTest ? "test_key" : requireEnv("RESEND_API_KEY"),
+  smtpFrom: process.env.SMTP_FROM ?? "Monitoring Platform <onboarding@resend.dev>",
 };
