@@ -16,6 +16,7 @@
     "cors": "*",
     "dotenv": "*",
     "express": "*",
+    "express-rate-limit": "^8.3.1",
     "helmet": "*",
     "jsonwebtoken": "*",
     "mongoose": "*",

@@ -6,7 +6,7 @@ import { env } from "./config/env";
 import { errorHandler } from "./middleware/error.middleware";
 import { createRoutes } from "./routes";
 import { getQueueStats } from "./queue/index";
-
+import { globalRateLimit, authRateLimit } from "./middleware/rateLimit.middleware";
 
 export function createApp() {
   const app = express();
@@ -16,14 +16,16 @@ export function createApp() {
   app.use(cors({ origin: env.corsOrigin === "*" ? true : env.corsOrigin, credentials: false }));
   app.use(express.json());
 
-  app.get("/health", (_req, res) => res.json({ ok: true }));
+  // ── Rate Limiting ──────────────────────────────────────────────────
+  app.use(globalRateLimit);
+  app.use("/auth", authRateLimit);
 
+  app.get("/health", (_req, res) => res.json({ ok: true }));
 
   app.get("/__whoami", (_req, res) =>
     res.json({ from: "apps/api/src/app.ts", apiPrefix: true, port: env.port })
   );
 
-  // Returns how many Jobs are waiting, active, completed, or failed.
   app.get("/queue/stats", async (_req, res, next) => {
     try {
       const stats = await getQueueStats();
@@ -33,9 +35,8 @@ export function createApp() {
     }
   });
 
-  // API routes
   app.use(createRoutes());
-
   app.use(errorHandler);
+
   return app;
 }
