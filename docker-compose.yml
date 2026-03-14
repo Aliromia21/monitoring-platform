@@ -2,6 +2,7 @@ services:
   mongo:
     image: mongo:6
     container_name: monitoring-mongo
+    restart: unless-stopped
     ports:
       - "27017:27017"
     volumes:
@@ -12,15 +13,12 @@ services:
       timeout: 5s
       retries: 10
 
-  # Redis as the Message Broker
-  # alpine = lightweight image 
-  # appendonly yes 
   redis:
     image: redis:7-alpine
     container_name: monitoring-redis
     restart: unless-stopped
     ports:
-      - "6380:6379"    
+      - "6380:6379"
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
@@ -30,7 +28,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Visual UI for Redis
   redis-commander:
     image: rediscommander/redis-commander:latest
     container_name: monitoring-redis-ui
@@ -47,22 +44,45 @@ services:
       context: ./apps/api
       dockerfile: Dockerfile
     container_name: monitoring-api
+    restart: unless-stopped
     ports:
       - "4000:4000"
+    env_file:
+      - ./apps/api/.env.production
     environment:
-      NODE_ENV: production
-      PORT: 4000
+      NODE_ENV:    production
+      PORT:        4000
       MONGODB_URI: mongodb://mongo:27017/monitoring_platform
-      JWT_SECRET: change_me_in_compose
-      JWT_EXPIRES_IN: 7d
-      CORS_ORIGIN: "*"
-      REDIS_URL: redis://redis:6379   # Redis address inside the Docker network
+      REDIS_URL:   redis://redis:6379
     depends_on:
       mongo:
         condition: service_healthy
-      redis:                          # Waiting for Redis to be healthy first
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  worker:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile.worker
+    container_name: monitoring-worker
+    restart: unless-stopped
+    env_file:
+      - ./apps/api/.env.production
+    environment:
+      NODE_ENV:    production
+      MONGODB_URI: mongodb://mongo:27017/monitoring_platform
+      REDIS_URL:   redis://redis:6379
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
 volumes:
   mongo_data:
-  redis_data:   
+  redis_data:
