@@ -6,8 +6,6 @@
 
 ---
 
-![Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)
-
 | Service | Status |
 |--------|--------|
 | API CI | ![API Tests](https://github.com/Aliromia21/monitoring-platform/actions/workflows/api-ci.yml/badge.svg) |
@@ -15,142 +13,213 @@
 
 ---
 
-## Why this project exists:
-This repo simulates a lean version of real-world monitoring platforms. 
-The goal is to demonstrate distributed design, incident detection, 
-and observability concepts end to end.
+## Why this project exists
+
+This project simulates a lean version of real-world monitoring platforms like Datadog and UptimeRobot. The goal is to demonstrate distributed systems design, incident detection, and observability concepts end to end.
 
 ---
 
-## System Architecture & Deployment
+## System Architecture
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│  Monitoring     │     │   BullMQ Queue  │     │  Worker Service │
+│  Engine         │────▶│   (Redis)       │────▶│  (Consumer)     │
+│  (Producer)     │     │                 │     │                 │
+└─────────────────┘     └─────────────────┘     └────────┬────────┘
+                                                          │
+                              ┌───────────────────────────┤
+                              │                           │
+                    ┌─────────▼──────┐         ┌─────────▼──────┐
+                    │   MongoDB      │         │  Notification  │
+                    │   Atlas        │         │  Service       │
+                    │  (CheckRuns,   │         │  (Resend)      │
+                    │   Alerts)      │         │                │
+                    └────────────────┘         └────────────────┘
+```
 
-This project is a modern **Monorepo** designed for scalability and high availability. It is currently deployed across a multi-cloud environment:
-
-* **Frontend:** Hosted on **Vercel** (Global Edge Network).
-* **Backend:** Containerized API and Background Engine running on **Railway**.
-* **Database:** Managed **MongoDB Atlas** Cluster (Time-series optimization).
-* **Queue:** Redis on Railway for job persistence and distribution
-
-
+**Deployment:**
+- **Frontend:** Vercel (Global Edge Network)
+- **Backend API:** Railway
+- **Worker:** Railway (independent service)
+- **Database:** MongoDB Atlas
+- **Queue:** Redis on Railway
 
 ---
 
 ## Features
 
 ### Core Infrastructure
-- **Secure Auth:** JWT-based authentication with stateless session management.
-- **Strict Multi-tenancy:** Ownership enforcement at the database level to prevent data leakage.
-- **Health Check Engine:** A decoupled, non-blocking background worker that executes periodic HTTP probes.
+- **Secure Auth:** JWT-based authentication with stateless session management
+- **Strict Multi-tenancy:** Ownership enforcement at the database level — no data leakage between users
+- **Health Check Engine:** Decoupled background producer that schedules periodic HTTP probes
 
 ### Distributed Queue Architecture
-
-- **Producer/Consumer Pattern:** Monitoring engine enqueues jobs into BullMQ — completely decoupled from execution
+- **Producer/Consumer Pattern:** Engine enqueues jobs into BullMQ — completely decoupled from execution
 - **Job Persistence:** Jobs survive server restarts — Redis guarantees no check is lost
 - **Retry Logic:** Automatic exponential backoff (3 attempts) on transient failures
-- **Dead Letter Queue:** Jobs that exhaust all retries are moved to a separate queue for inspection and alerting — no silent failures
-- **Horizontal Scaling Ready:** Multiple Worker instances can process jobs concurrently with zero duplication
+- **Dead Letter Queue:** Jobs that exhaust all retries move to a separate queue — zero silent failures
+- **Horizontal Scaling:** Multiple Worker instances process jobs concurrently with zero duplication — guaranteed by Redis atomic locking
 
 ### Observability & Metrics
-- **Performance Tracking:** Real-time response time (Latency) and availability metrics.
-- **Historical Analysis:** Time-series check-run storage for long-term reliability reporting.
-- **Visual Analytics:** Interactive latency and uptime charts using **Recharts**.
+- **Performance Tracking:** Real-time response time and availability metrics per monitor
+- **Historical Analysis:** Time-series check-run storage for long-term reliability reporting
+- **P95 Response Time:** 95th percentile response time calculated via MongoDB aggregation pipeline
+- **Dashboard Summary:** Account-level overview — total monitors, uptime %, alerts today
 - **Queue Stats API:** Live visibility into waiting, active, completed, and failed job counts
+- **Visual Analytics:** Interactive latency and uptime charts using Recharts
 
+### Smart Alerting
+- **Consecutive Failure Thresholds:** DOWN alerts only after N consecutive failures — no false positives
+- **State Machine Logic:**
+  - `DOWN` — triggered after N consecutive failures
+  - `RECOVERY` — triggered only if a previous DOWN was active
+  - `SYSTEM_ERROR` — triggered when a job exhausts all retry attempts
+- **Email Notifications:** Automatic email on DOWN and RECOVERY events via Resend
 
+### API Security
+- **Rate Limiting:** Global 100 req/15min + stricter 10 req/15min on auth endpoints
+- **Helmet:** Secure HTTP headers on all responses
+- **CORS:** Configurable origin whitelist
 
-### Smart Alerting Logic
-- **Consecutive Failure Thresholds:** Intelligent DOWN alerts to avoid false positives.
-- **State Machine Alerting:** - `DOWN` alert triggered only after $N$ consecutive failures.
-  - `RECOVERY` alert triggered only if a previous `DOWN` state was active.
-
+### Caching Layer
+- **Redis Cache:** Monitor list and single monitor responses cached with 30s TTL
+- **Cache Invalidation:** Automatic invalidation on create, update, and delete
+- **Cache-aside Pattern:** Check Redis first, fall back to MongoDB on miss
 
 ---
 
 ## Tech Stack
 
 | Layer | Technologies |
-|---|---|
-| **Frontend** | React 18, Vite, Tailwind CSS, React Query, Recharts |
-| **Backend** | Node.js, TypeScript, Express.js |
-| **Queue** | BullMQ ,Redis |
-| **Database** | MongoDB (Mongoose) |
-| **DevOps** | Docker, Docker Compose, GitHub Actions (CI/CD) |
-| **Deployment** | Vercel, Railway, MongoDB Atlas |
+|-------|-------------|
+| Frontend | React 18, Vite, Tailwind CSS, React Query, Recharts |
+| Backend | Node.js, TypeScript, Express.js |
+| Queue | BullMQ, Redis |
+| Cache | Redis (IORedis) |
+| Database | MongoDB (Mongoose) |
+| Email | Resend |
+| DevOps | Docker, Docker Compose, GitHub Actions |
+| Deployment | Vercel, Railway, MongoDB Atlas |
 
 ---
 
 ## Project Structure
-
-```text
-
-apps/
-├── api/                    # Node.js TypeScript Service
-│   ├── engine/             # Monitoring Engine — Producer
-│   ├── queue/              # BullMQ Queue definition and helpers
-│   ├── worker/             # BullMQ Worker — Consumer + Dead Letter Queue
-│   ├── notifications/      # Email notification service
-│   ├── modules/            # Domain-driven modules (Auth, Monitors, Alerts)
-│   └── __tests__/          # 31 integration tests — 85% coverage
-└── web/                    # React Dashboard
-    ├── ui/                 # Reusable Tailwind Components
-    └── hooks/              # Custom React Query hooks
-
 ```
+apps/
+├── api/                      # Node.js TypeScript Service
+│   ├── engine/               # Monitoring Engine — Producer
+│   ├── queue/                # BullMQ Queue definition and helpers
+│   ├── worker/               # BullMQ Worker — Consumer + Dead Letter Queue
+│   ├── notifications/        # Email notification service (Resend)
+│   ├── config/               # Redis, Cache, DB, Env configuration
+│   ├── middleware/           # Auth, Rate Limiting, Error handling
+│   ├── modules/              # Domain-driven modules
+│   │   ├── auth/             # JWT authentication
+│   │   ├── monitors/         # Monitor CRUD + caching
+│   │   ├── alerts/           # Alert management
+│   │   ├── checkruns/        # Check history + summary stats
+│   │   └── dashboard/        # Aggregated dashboard metrics
+│   └── __tests__/            # 31 integration tests
+└── web/                      # React Dashboard
+    ├── ui/                   # Reusable Tailwind Components
+    └── hooks/                # Custom React Query hooks
+```
+
+---
 
 ## Getting Started
 
 ### Prerequisites
-Node.js ≥ 20
-Docker Desktop
+- Node.js ≥ 20
+- Docker Desktop
 
----
-
-### 1️⃣ Rapid Start with Docker
-
-From the repository root:
-
+### 1️⃣ Quick Start with Docker
 ```bash
+# Clone the repo
+git clone https://github.com/Aliromia21/monitoring-platform.git
+cd monitoring-platform
+
+# Create production env file
+cp apps/api/.env.example apps/api/.env.production
+# Edit .env.production with your secrets
+
+# Start everything
 docker compose up --build
 ```
-### 2️⃣ Development Mode (Monorepo))
-```
+
+This starts MongoDB, Redis, Redis Commander, API, and Worker — all connected and healthy.
+
+### 2️⃣ Development Mode
+```bash
 # Install root dependencies
 npm install
 
-# Run Backend
+# Terminal 1 — API + Engine
 cd apps/api && npm run dev
 
-# Run Frontend
+# Terminal 2 — Worker (optional, for horizontal scaling)
+cd apps/api && npm run dev:worker
+
+# Frontend
 cd apps/web && npm run dev
 ```
 
+### Environment Variables
+```dotenv
+NODE_ENV=development
+PORT=3001
+MONGODB_URI=your_mongodb_uri
+JWT_SECRET=your_jwt_secret
+JWT_EXPIRES_IN=7d
+REDIS_URL=redis://localhost:6379
+RESEND_API_KEY=your_resend_api_key
+SMTP_FROM=Monitoring Platform <onboarding@resend.dev>
+```
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/auth/register` | Register new user |
+| POST | `/auth/login` | Authenticate user |
+| GET | `/monitors` | List all monitors (cached) |
+| POST | `/monitors` | Create monitor |
+| GET | `/monitors/:id` | Get monitor (cached) |
+| PUT | `/monitors/:id` | Update monitor |
+| DELETE | `/monitors/:id` | Delete monitor |
+| GET | `/monitors/:id/checks` | Check run history |
+| GET | `/monitors/:id/summary` | Monitor stats + P95 |
+| GET | `/alerts` | List alerts |
+| GET | `/dashboard/summary` | Account overview |
+| GET | `/queue/stats` | Queue health |
+| GET | `/health` | API health check |
+
+---
+
 ## Testing & Reliability
 
-- The system is built with a Test-First mindset. The API layer maintains ~85% line coverage.
+The system is built with a test-first mindset.
 
-- Integration Tests: Using Jest and In-memory MongoDB.
-
-- Worker Tests: Dependency injection pattern for deterministic job processing tests
-
-- Queue Tests: Real Redis integration tests for Producer and Stats
-
-- Rule Engine: Alerting logic is unit-tested with deterministic failure scenarios.
-
-- CI/CD: Automated testing pipelines via GitHub Actions.
+- **31 integration tests** — all passing on every push
+- **Worker Tests:** Dependency injection pattern — no real HTTP requests
+- **Queue Tests:** Real Redis integration — tests actual job enqueueing
+- **Alert Rule Tests:** Deterministic unit tests for all state machine transitions
+- **CI/CD:** GitHub Actions runs full test suite on every push to main
+- **Coverage:** Tracked via Codecov on every PR
 
 ---
 
 ## Author
 
-Ali Romia - Software Engineer
+Ali Romia — Software Engineer
 
-- GitHub: https://github.com/Aliromia21 
-- LinkedIn: https://www.linkedin.com/in/aliromia/
+- GitHub: [github.com/Aliromia21](https://github.com/Aliromia21)
+- LinkedIn: [linkedin.com/in/aliromia](https://www.linkedin.com/in/aliromia/)
 
-## License :
+---
+
+## License
 
 MIT License © Ali Romia 2026
-
-
-
-
