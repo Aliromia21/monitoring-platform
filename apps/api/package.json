@@ -3,15 +3,15 @@
   "version": "1.0.0",
   "main": "dist/server.js",
   "scripts": {
-  "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-  "dev:worker": "ts-node-dev --respawn --transpile-only src/worker/worker.process.ts",
-  "build": "tsc",
-  "start": "node dist/server.js",
-  "start:worker": "node dist/worker/worker.process.js",
-  "test": "cross-env NODE_ENV=test jest --runInBand",
-  "test:watch": "cross-env NODE_ENV=test jest --watch",
-  "test:coverage": "cross-env NODE_ENV=test jest --runInBand --coverage"
-},
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "dev:worker": "ts-node-dev --respawn --transpile-only src/worker/worker.process.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "start:worker": "node dist/worker/worker.process.js",
+    "test": "cross-env NODE_ENV=test jest --runInBand",
+    "test:watch": "cross-env NODE_ENV=test jest --watch",
+    "test:coverage": "cross-env NODE_ENV=test jest --runInBand --coverage"
+  },
   "dependencies": {
     "bcrypt": "*",
     "bullmq": "^5.70.1",
@@ -20,6 +20,7 @@
     "express": "*",
     "express-rate-limit": "^8.3.1",
     "helmet": "*",
+    "ioredis": "^5.10.0",
     "jsonwebtoken": "*",
     "mongoose": "*",
     "nodemailer": "^8.0.2",

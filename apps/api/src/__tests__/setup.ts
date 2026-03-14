@@ -2,6 +2,7 @@ import { MongoMemoryServer } from "mongodb-memory-server";
 import mongoose from "mongoose";
 import { monitorQueue } from "../queue/index";
 import { deadLetterQueue } from "../worker/monitorWorker";
+import { cacheClient } from "../config/cache";
 
 let mongo: MongoMemoryServer;
 
@@ -25,4 +26,5 @@ afterAll(async () => {
   await mongo.stop();
   await monitorQueue.close();
   await deadLetterQueue.close();
+  await cacheClient.quit();
 });
